@@ -1,0 +1,43 @@
+package ftutil
+
+import(
+	"hicutil"
+	"os"
+	"strings"
+	"bufio"
+	"fmt"
+)
+
+
+func WriteScoresToFile(alltadscores map[hicutil.Pair][]float64, outfile string) {
+
+	//write values to file
+        f,err := os.Create(outfile)
+	if err != nil {
+                panic(err)
+                }
+        //defer f.Close()
+
+        w := bufio.NewWriter(f)
+        labelline := []string{"TADstart", "TADend","GD score","BI score","BD score","total score"}
+        //fmt.Println(strings.Join(labelline, "\t"))
+	line1 := strings.Join(labelline, "\t")
+	//fmt.Println(line1)
+        fmt.Fprintf(w,line1+"\n")
+        for tad,scores := range alltadscores {
+                strvals := make([]string, 6)
+                strvals[0] = fmt.Sprintf("%d",tad.A)
+                strvals[1] = fmt.Sprintf("%d",tad.B)
+                strvals[2] = fmt.Sprintf("%f", scores[0])
+                strvals[3] = fmt.Sprintf("%f", scores[1])
+                strvals[4] = fmt.Sprintf("%f", scores[2])
+                strvals[5] = fmt.Sprintf("%f", scores[3])
+                newline := strings.Join(strvals, "\t")
+                //newline := strconv.Itoa(t.ID)
+                fmt.Fprintf(w,newline+"\n")
+        }
+        w.Flush()
+        f.Close()
+        fmt.Println("Wrote TAD score info to", outfile)
+
+}

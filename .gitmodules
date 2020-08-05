@@ -1,0 +1,3 @@
+[submodule "goptuna"]
+	path = goptuna
+	url = https://github.com/c-bata/goptuna

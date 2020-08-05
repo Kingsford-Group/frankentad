@@ -1,0 +1,105 @@
+package ftutil
+
+import(
+	"hicutil"
+	"math"
+//	"fmt"
+//	"os"
+//	"time"
+//	"bufio"
+//	"strings"
+)
+
+
+func RunDynamicProgram(hicmap map[hicutil.Pair]float64, chrlength int, allscores map[hicutil.Pair]float64, meanscores [][]float64, gamma_a float64, allisscores []float64, mindists []int, alpha_is float64, lambda_a float64, lambda_is float64, lambda_tt float64, lambda_hs float64, lambda_di float64, maxsteps int, gamma_tt float64, diridxtt []float64, avgfreq []float64, atilde map[hicutil.Pair]float64, nontadmean float64, tadmeans map[hicutil.Pair]float64, discores []float64, didists []int) ([][]int, map[hicutil.Pair][]float64 ) {
+
+	var newscore float64
+	//var gdtime, istime, ditime time.Duration //hstime, tttime, ditime time.Duration
+
+	optscore := make([]float64, chrlength)
+	opttads := make([][][]int, chrlength)
+
+	diwindowsize := 3
+
+	alltadscores := map[hicutil.Pair][]float64{}
+
+	for l := 1; l < chrlength; l++ {
+		//fmt.Println(l)
+		currmaxscore := math.Inf(-1)
+		currmaxk := 0
+		for k := 0; k < l; k++ {
+			newtad := []int{k,l}
+			gdscore,_ := ComputeGraphDensScorebyTAD(allscores, &meanscores, newtad, gamma_a)
+			isscore,_ := ComputeBdyInsScorebyTAD(&allisscores, &mindists, newtad, alpha_is)
+			//ttscore,_,ttlen := ComputeLinEnrichScorebyTAD(newtad, chrlength, gamma_tt, diridxtt, avgfreq, atilde, hicmap, map[hicutil.Pair]float64{})
+			//hicsegscore,_,_ := ComputeBlockConstScorebyTAD(newtad, chrlength, nontadmean, tadmeans, hicmap, map[hicutil.Pair]float64{}) // start w/ empty map for hicseg scores
+			discore,_ := ComputeBiasDirScorebyTAD(discores, didists, newtad, diwindowsize)
+	
+			//gdscore := 0.0
+			//isscore := 0.0
+			//discore := 0.0
+			ttscore := 0.0
+			hicsegscore := 0.0
+	
+			//gdtime += gdlen
+			//istime += islen
+			//hstime += hslen
+			//tttime += ttlen
+			//ditime += dilen
+
+			newtadscore := lambda_a*gdscore + lambda_is*isscore + lambda_hs*hicsegscore + lambda_tt*ttscore + lambda_di*discore
+			alltadscores[hicutil.Pair{k,l}] = []float64{gdscore,isscore,discore,newtadscore}
+			if k == 0 {
+				newscore = newtadscore
+			} else {
+				newscore = newtadscore + optscore[k-1]
+			}
+			if newscore > currmaxscore {
+				currmaxscore = newscore
+				currmaxk = k
+			}
+			
+		}
+		optscore[l] = currmaxscore
+		addtad := make([][]int,1)
+		addtad[0] = []int{currmaxk,l}
+		
+		if currmaxk > 0 {
+			prevopt := make([][]int,len(opttads[currmaxk-1]))
+			copy(prevopt,opttads[currmaxk-1])
+			newtadlist := append(prevopt,addtad...)
+			opttads[l] = newtadlist
+		} else {
+			opttads[l] = addtad
+		}
+	}
+
+	//fmt.Println("total time spent in Armatus scoring =", gdtime)
+        //fmt.Println("total time spent in IS scoring =", istime)
+        //fmt.Println("total time spent in TADtree scoring =", tttime)
+        //fmt.Println("total time spent in HiCSeg scoring =", hstime)
+        //fmt.Println("total time spent in DI scoring =", ditime)
+
+	/*for _,tad := range opttads[chrlength-1] {
+		//gdscore,_ := ComputeGraphDensScorebyTAD(allscores, &meanscores, tad, gamma_a)
+		isscore,_ := ComputeBdyInsScorebyTAD(&allisscores, &mindists, tad, alpha_is)
+		//ttscore,_,ttlen := ComputeLinEnrichScorebyTAD(newtad, chrlength, gamma_tt, diridxtt, avgfreq, atilde, hicmap, map[hicutil.Pair]float64{})
+		//hicsegscore,_,hslen := ComputeBlockConstScorebyTAD(newtad, chrlength, nontadmean, tadmeans, hicmap, map[hicutil.Pair]float64{}) // start w/ empty map for hicseg scores
+		//discore,_ := ComputeBiasDirScorebyTAD(discores, didists, tad, diwindowsize)
+		fmt.Println(tad,isscore)
+	}*/
+	//fmt.Println("final score =",optscore[chrlength-1])
+	//os.Exit(1)
+	/*//fmt.Println(opttads[chrlength-1])
+	//os.Exit(1)
+	gdscore,_ := ComputeGraphDensScore(allscores, &meanscores, &opttads[chrlength-1], gamma_a)
+	isscore,_ := ComputeBdyInsScore(&allisscores, &mindists, &opttads[chrlength-1], alpha_is)
+	//ttscore,_,ttlen := ComputeLinEnrichScorebyTAD(newtad, chrlength, gamma_tt, diridxtt, avgfreq, atilde, hicmap, map[hicutil.Pair]float64{})
+	//hicsegscore,_,hslen := ComputeBlockConstScorebyTAD(newtad, chrlength, nontadmean, tadmeans, hicmap, map[hicutil.Pair]float64{}) // start w/ empty map for hicseg scores
+	discore,_ := ComputeBiasDirScore(discores, didists, &opttads[chrlength-1], diwindowsize)
+	
+	fmt.Println("final scores", gdscore, isscore, discore)*/
+
+	return opttads[chrlength-1],alltadscores
+
+}
