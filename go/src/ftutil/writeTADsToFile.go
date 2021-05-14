@@ -7,7 +7,7 @@ import( "os"
 	"strconv"
 	)
 
-func WriteTADsToFile(tadset [][]int, res int, outfile string) {
+func WriteTADsToFile(tadset [][]int, res int, alpha float64, gamma float64, lambda_a float64, lambda_is float64, lambda_di float64, outfile string) {
 
         //write values to file
         f,err := os.Create(outfile)
@@ -17,10 +17,12 @@ func WriteTADsToFile(tadset [][]int, res int, outfile string) {
         //defer f.Close()
 
         w := bufio.NewWriter(f)
+	paramstring := fmt.Sprintf("alpha=%f gamma=%f lambda_a=%f lambda_is=%f lambda_di=%f\n",alpha,gamma,lambda_a,lambda_is,lambda_di)
         labelline := []string{"TADstart", "TADend"}
         //fmt.Println(strings.Join(labelline, "\t"))
 	line1 := strings.Join(labelline, "\t")
         //fmt.Println(line1)
+	fmt.Fprintf(w,paramstring)
 	fmt.Fprintf(w,line1+"\n")
 
 	for _,vals := range tadset {
